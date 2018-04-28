@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "webpack-dev-server --open --progress --public --config ./config/webpack.dev.config.js",
-    "pro": "webpack --progress --config ./config/webpack.pro.config.js"
+    "dev": "webpack-dev-server --mode development --open",
+    "pro": "webpack --mode production"
   },
   "author": "",
   "license": "ISC",

@@ -1,4 +1,4 @@
-import { getTaskList } from '../common/request.js'
+import { getTaskList } from '../common/request-test.js'
 
 import { observable, action, runInAction, autorun } from 'mobx'
 class State {
@@ -11,7 +11,7 @@ class State {
   updateList() {
     this.list.replace(this.tasks)
   }
-  
+
   @action.bound
   sortData(dataItem, direction) {
     let arr = this.tasks
@@ -61,7 +61,7 @@ class State {
   loadData() {
     getTaskList().then((res) => {
       runInAction(() => {
-        this.tasks.replace(res.data.tasks)
+        this.tasks.replace(res.tasks)
         this.updateList()
       })
     })

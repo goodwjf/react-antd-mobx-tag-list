@@ -24,13 +24,13 @@ render(
     onRemoved={removed}
     removeData={store.removeData}
     onSelected={selected}
-    searchVisible={false}
+    searchVisible={true}
     searchData={store.searchData}
     plus={true}
     plusName='添加任务'
     addData={store.addData}
     onAdd={add}
-    arrow={false}
+    arrow={true}
     sortData={store.sortData}
   />,
   document.getElementById('root')
