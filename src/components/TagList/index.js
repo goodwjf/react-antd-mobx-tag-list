@@ -7,7 +7,7 @@
   onRemoved = { function }
   removeData = { mobx.action }
   onSelected = { function }
-  
+
   // 本地查询
   searchVisible = { Boolean }
   searchData = { mobx.action }
@@ -17,17 +17,20 @@
   plusName = 'string'
   addData = { mobx.action }
   onAdd = { function }
-  
+
   // 数据项上下移动
   arrow = { Boolean }
-  sortData = { mobx.action } 
+  sortData = { mobx.action }
 */
 
 function onOverflowContainer(container, element, direction) {
+  if (container.scrollHeight === container.clientHeight) {
+    return
+  }
   const offsetBox = container.getBoundingClientRect().top
   const box = element.getBoundingClientRect()
   const containerHeight = container.clientHeight
-  const elementHeight = element.offsetHeight  
+  const elementHeight = element.offsetHeight
   let scrollUp = box.top - offsetBox - elementHeight // (box.top < offsetBox)
   let scrollDown = box.bottom - containerHeight - offsetBox + elementHeight// (box.bottom > containerHeight + offsetBox)
 
@@ -63,7 +66,7 @@ class MyTag extends Component {
         node: (<Icon type="close" className={css['icon-action']} onClick={props.icon.event} />)
       }
     }
-    
+
     return (
       <div
       type={type}
@@ -173,7 +176,7 @@ export default class TagList extends Component {
           {data.map((val, index) => {
             const isLongVal = val.length > 20;
             const tagElem = (
-              <MyTag 
+              <MyTag
                 key={val}
                 icon={{
                   type: 'close',
