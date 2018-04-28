@@ -1,0 +1,24 @@
+{
+  "plugins": ["transform-decorators-legacy", "transform-class-properties"],
+  "presets": [
+    "react",
+    "env"
+  ],
+  "env": {
+    "targets": {
+      "browserslist": [
+        "> 1%"
+      ]
+    },
+    "development": {
+      "plugins": [
+        [
+          "import", {
+            "libraryName": "antd",
+            "style": "css"
+          }
+        ]
+      ]
+    }
+  }
+}
