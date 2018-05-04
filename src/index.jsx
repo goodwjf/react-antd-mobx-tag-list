@@ -4,34 +4,29 @@ import TagList from './components/TagList'
 import css from './index.scss'
 import store from './store/state-task.js'
 
-let selected = (tag) => {
+let onSelected = (tag) => {
   console.log(tag)
 }
 
-let removed = (tag, tags) => {
-  console.log(tag, tags)
+let onRemoved = (tag) => {
+  console.log(tag)
 }
 
-let add = (tag, tags) => {
-  console.log(tag, tags)
+let onAdd = (tag) => {
+  console.log(tag)
 }
 
 render(
   <TagList
     width={200}
-    height={500}
-    data={store.list}
-    onRemoved={removed}
-    removeData={store.removeData}
-    onSelected={selected}
-    searchVisible={true}
-    searchData={store.searchData}
-    plus={true}
-    plusName='添加任务'
-    addData={store.addData}
-    onAdd={add}
+    height={589}
+    store={store}
+    onRemoved={onRemoved}
+    onSelected={onSelected}
+    onAdd={onAdd}
+    search={true}
     arrow={true}
-    sortData={store.sortData}
+    plus='bottom'
   />,
   document.getElementById('root')
 )

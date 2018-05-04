@@ -1,27 +1,26 @@
 /*@使用说明
 
-  // 基本设置
-  width = { number }
-  height = { number }
-  data = { array }
-  onRemoved = { function }
-  removeData = { mobx.action }
-  onSelected = { function }
-
-  // 本地查询
-  searchVisible = { Boolean }
-  searchData = { mobx.action }
-
-  // 尾部追加数据
-  plus = { Boolean }
-  plusName = 'string'
-  addData = { mobx.action }
-  onAdd = { function }
-
-  // 数据项上下移动
-  arrow = { Boolean }
-  sortData = { mobx.action }
+  width={200}
+  height={589}
+  store={store}
+  onRemoved={this.onRemoved}
+  onSelected={this.onSelected}
+  //开启筛选
+  search={true}
+  //开启排序
+  arrow={true}
+  //开启追加
+  plus={true|top}
+  onAdd={this.onAdd}
 */
+
+import { observer } from 'mobx-react'
+import React, { Component } from 'react'
+import { findDOMNode } from 'react-dom'
+import { Tag, Input, Tooltip, Icon, Modal, Pagination, Button } from 'antd'
+import css from './index.scss'
+const confirm = Modal.confirm
+const Search = Input.Search
 
 function onOverflowContainer(container, element, direction) {
   if (container.scrollHeight === container.clientHeight) {
@@ -43,37 +42,42 @@ function onOverflowContainer(container, element, direction) {
   }
 }
 
-import { observer } from 'mobx-react'
-import React, { Component } from 'react'
-import { Tag, Input, Tooltip, Icon, Modal, Pagination, Button } from 'antd'
-import css from './index.scss'
-const confirm = Modal.confirm
-const Search = Input.Search
-
 @observer
 class MyTag extends Component {
 
+  onClick = (e) => {
+    this.props.onClick(this.props.val)
+  }
+  onClose = (e) => {
+    this.props.icon.event(this.props.val)
+    e.stopPropagation()
+  }
+  componentWillUpdate(nextProps) {
+    if (nextProps.highLight) {
+      this.tag.scrollIntoViewIfNeeded(false)
+    }
+  }
   render() {
     let props = this.props
     let type = props.icon.type || 'close'
+    let highLight = props.highLight ? css['tag-selected'] : ""
     let icon = {
       'plus': {
         className: [css['my-tag'], css['tag-action']].join(' '),
         node: (<Icon type="plus" className={css['icon-action']} />)
       },
       'close': {
-        className: [css['my-tag'], props.className].join(' '),
-        node: (<Icon type="close" className={css['icon-action']} onClick={props.icon.event} />)
+        className: [css['my-tag'], highLight].join(' '),
+        node: (<Icon type="close" className={css['icon-action']} onClick={this.onClose} />)
       }
     }
 
     return (
       <div
-      type={type}
-      data-val={props.val}
-      data-index={props.index}
-      className={icon[type].className}
-      onClick={props.onClick}
+        ref={(tag)=>{this.tag = tag}}
+        type={type}
+        className={icon[type].className}
+        onClick={this.onClick}
       >
         { props.children }
         { icon[type].node }
@@ -90,27 +94,25 @@ export default class TagList extends Component {
     selectedValue:''
   };
 
-  componentDidMount() {
-    this.setState({ tags: this.props.data })
-  }
-
-  handleClose = (e) => {
-    let removedTag = this.state.selectedValue
+  handleClose = (removedTag) => {
     confirm({
       title: '提示！',
       content: '确认要删除吗？',
       cancelText: '否',
       okText: '是',
       onOk: () => {
-        this.props.removeData(removedTag)
-        this.props.onRemoved(removedTag, this.props.data)
+        let val = this.searchInput.input.input.value
+        this.props.store.removeData(removedTag)
+        this.props.onRemoved(removedTag)
+        if(val) {
+          this.props.store.searchData(val)
+        }
       }
     });
-    e.stopPropagation();
   }
 
-  handleSelected = (e) => {
-    this.setState({selectedValue: e.target.dataset.val}, () => {
+  handleSelected = (val) => {
+    this.setState({selectedValue: val}, () => {
       this.props.onSelected(this.state.selectedValue)
     })
   }
@@ -125,10 +127,10 @@ export default class TagList extends Component {
 
   handleInputConfirm = () => {
     const inputValue = this.state.inputValue;
-    let data = this.props.data;
+    let data = this.props.store.list;
     if (inputValue && data.indexOf(inputValue) === -1) {
-      this.props.addData(inputValue)
-      this.props.onAdd(inputValue, this.props.data)
+      this.props.onAdd(inputValue)
+      this.props.store.addData(inputValue)
     }
 
     this.setState({
@@ -138,81 +140,105 @@ export default class TagList extends Component {
   }
 
   handleInputSearch = (e) => {
-    let val = e.target.value
-    this.props.searchData && this.props.searchData(val)
+    this.props.store.searchData(e.target.value)
   }
 
   handleArrow = (direction) => {
-    this.state.selectedValue && this.props.sortData(this.state.selectedValue, direction)
-    // 修正：当焦点元素超出容器滚动条不自动滚动的问题（Chrome v64 只支持向上滚动）
-    let container = document.querySelector(`.${css.box}`)
-    let element = document.querySelector(`.${css['tag-selected']}`)
-    element && onOverflowContainer(container, element, direction)
+    this.state.selectedValue && this.props.store.sortData(this.state.selectedValue, direction)
   }
 
+  initTop() {
+    let { search, arrow, plus } = this.props
+    let arr = []
+    if(search) {
+      arr.push(
+        <Search
+          key='search'
+          ref={this.searchInputRef}
+          placeholder="输入关键词"
+          onChange={this.handleInputSearch}
+          style={{ width: 200 }}
+        />
+      )
+    }
+    if (arrow) {
+      arr.push(
+        <Tooltip title="选中任务点击向上移动" key='arrowup'>
+          <Button icon="arrow-up" className={css.arrow} onClick={() => this.handleArrow('up')} />
+        </Tooltip>
+      )
+      arr.push(
+        <Tooltip title="选中任务点击向下移动" key='arrowdown'>
+          <Button icon="arrow-down" className={css.arrow} onClick={() => this.handleArrow('down')} />
+        </Tooltip>
+      )
+    }
+    if (plus === 'top') {
+      arr.push(
+        <Tooltip title="新建" key='create'>
+          <Button icon="plus" style={{ marginLeft: 2 }} onClick={() => this.props.onAdd()} />
+        </Tooltip>
+      )
+    }
+    return arr
+  }
+
+  initBottom() {
+    let { inputVisible, inputValue } = this.state
+    let { plus } = this.props
+    if(plus === 'bottom') {
+      if(inputVisible) {
+      return (
+          <Input
+            ref={this.saveInputRef}
+            type="text"
+            value={inputValue}
+            onChange={this.handleInputChange}
+            onBlur={this.handleInputConfirm}
+            onPressEnter={this.handleInputConfirm}
+          />
+        )
+      }
+      if(!inputVisible) {
+      return (
+          <MyTag
+            icon={{ type: 'plus' }}
+            onClick={this.showInput}
+          > 添加 </MyTag>
+        )
+      }
+    }
+  }
   searchInputRef = input => this.searchInput = input
   saveInputRef = input => this.input = input
-
   render() {
-    const { inputVisible, inputValue, selectedValue } = this.state
-    const { width, height, plusName, searchVisible, data, plus, arrow } = this.props
+    const { selectedValue } = this.state
+    const { width, height, store} = this.props
     return (
       <div>
-        {searchVisible && (
         <div style={{ width }} className={css['search-box']}>
-            <Search
-              ref={this.searchInputRef}
-              placeholder="输入关键词"
-              onChange={this.handleInputSearch}
-              onSearch={value => console.log(value)}
-              style={{ width: 200 }}
-              size="small"
-            />
-            {arrow && (<Button icon="arrow-up" size="small" className={css.arrow} onClick={() => this.handleArrow('up')}/>)}
-            {arrow && (<Button icon="arrow-down" size="small" className={css.arrow} onClick={() => this.handleArrow('down')}/>)}
+          { this.initTop() }
         </div>
-        )}
-        <div className={css.box} style={{width, height}}>
-          {data.map((val, index) => {
+        <div className={css.box} style={{ width, height }} ref={this.boxRef}>
+          {store.list.map((val, index) => {
             const isLongVal = val.length > 20;
             const tagElem = (
               <MyTag
-                key={val}
+                key={index}
                 icon={{
                   type: 'close',
                   event: this.handleClose
                 }}
-                className={selectedValue === val ? css['tag-selected'] : ""}
-                index={index}
+                highLight={selectedValue === val}
                 val={val}
                 onClick = {this.handleSelected}
               >
                 {isLongVal ? `${val.slice(0, 20)}...` : val}
               </MyTag>
             );
-            return isLongVal ? <Tooltip title={val} key={val}>{tagElem}</Tooltip> : tagElem;
+            return  isLongVal ? <Tooltip title={val} key={index}>{tagElem}</Tooltip> : tagElem;
           })}
-          {plus && inputVisible && (
-            <Input
-              ref={this.saveInputRef}
-              type="text"
-              size="small"
-              value={inputValue}
-              onChange={this.handleInputChange}
-              onBlur={this.handleInputConfirm}
-              onPressEnter={this.handleInputConfirm}
-            />
-          )}
-          {plus && !inputVisible && (
-            <MyTag
-              icon={{
-                type:'plus'
-              }}
-              onClick={this.showInput}
-            >
-              {plusName}
-            </MyTag>
-          )}
+          { this.initBottom() }
         </div>
       </div>
     );
